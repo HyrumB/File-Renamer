@@ -3,15 +3,15 @@
 // 2)
 // 3)
 // 4)
-package main
+// package main
 
-import (
-	"fmt"
-)
+// import (
+// 	"fmt"
+// )
 
-func main() {
-	var input string
-	fmt.Println("Hello, World!")
-	fmt.Scanln(&input)
+// func main() {
+// 	var input string
+// 	fmt.Println("Hello, World!")
+// 	fmt.Scanln(&input)
 
-}
+// }
