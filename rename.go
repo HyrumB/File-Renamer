@@ -8,6 +8,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
 func main() {
@@ -19,16 +20,16 @@ func main() {
 		fmt.Scanln(&userInput)
 		switch userInput {
 		case "1":
-			rename_inputs()
+			collect_renaming_inputs()
 		case "2":
-			fmt.Println("2")
+			collect_batch_renaming_inputs()
 		case "3":
 			running = false
 		}
 	}
 }
 
-func rename_inputs() {
+func collect_renaming_inputs() {
 	// declare variables
 	var directory string
 	var filename string
@@ -36,7 +37,6 @@ func rename_inputs() {
 	var newName string
 
 	// get user input
-	fmt.Println("where is the file?")
 	fmt.Println("enter the file path to the folder containing the file(s)")
 	fmt.Scanln(&directory)
 	fmt.Println("what is its name?")
@@ -46,27 +46,33 @@ func rename_inputs() {
 	fmt.Println("what is the file's new name? ")
 	fmt.Scanln(&newName)
 
-	find_file(directory, filename, filetype)
+	verify_file(directory, filename, filetype)
 	rename_single_file(directory, filename, filetype, newName)
 }
 
-func read_directory(filepath string) {
-	entries, err := os.ReadDir(filepath)
-	// if it cant read the folder
-	if err != nil {
-		fmt.Println("Error reading directory:", err)
-		return
-	}
+func collect_batch_renaming_inputs() {
+	// declare variables
+	var directory string
+	// var foldername string
+	var newName string
 
-	for _, entry := range entries {
-		// Check if it's not a folder
-		if !entry.IsDir() {
-			fmt.Println(entry.Name()) // Print the file name
-		}
+	// get user input
+	fmt.Println("enter the file path to the folder containing the file(s)")
+	fmt.Scanln(&directory)
+
+	fmt.Println("what are you calling everything in the folder? ")
+	fmt.Scanln(&newName)
+
+	// handle any errors that come from bad paths
+	err := rename_whole_folder(directory, newName)
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("Files renamed successfully!")
 	}
 }
 
-func rename_single_file(directory, filename, filetype, newName string) {
+func rename_single_file(directory string, filename string, filetype string, newName string) {
 
 	// Rename the file
 	err := os.Rename(directory+"/"+filename+filetype, directory+"/"+newName+filetype)
@@ -82,7 +88,59 @@ func rename_single_file(directory, filename, filetype, newName string) {
 	}
 }
 
-func find_file(directory string, filename string, filetype string) {
+func rename_whole_folder(dir string, newName string) error {
+	count := 0
+
+	err := filepath.Walk(dir, func(path string, fi os.FileInfo, err error) error {
+		if err != nil {
+			return err // Handle errors during traversal
+		}
+
+		if !fi.IsDir() {
+			count++
+
+			// Get the original filename and extension
+			oldName := filepath.Base(path)
+			fileExt := filepath.Ext(oldName)
+
+			// Combine the new name with a unique identifier and extension
+			// %s: This is a placeholder for a string argument. It will be replaced by the value of newName.
+			// %d: This is a placeholder for an integer argument. It will be replaced by the value of count.
+			// basically Sprintf formatts the string [likely short for String print Formatted]
+			newPath := filepath.Join(filepath.Dir(path), fmt.Sprintf("%s(%d)%s", newName, count, fileExt))
+
+			// Rename the file
+			err = os.Rename(path, newPath)
+			if err != nil {
+				return fmt.Errorf("error renaming %s to %s: %w", path, newPath, err)
+			}
+
+			fmt.Printf("Renamed %s to %s\n", path, newPath)
+		}
+
+		return nil
+	})
+
+	return err
+}
+
+func verify_directory(filepath string) {
+	entries, err := os.ReadDir(filepath)
+	// if it cant read the folder
+	if err != nil {
+		fmt.Println("Error reading directory:", err)
+		return
+	}
+
+	for _, entry := range entries {
+		// Check if it's not a folder
+		if !entry.IsDir() {
+			fmt.Println(entry.Name()) // Print the file name
+		}
+	}
+}
+
+func verify_file(directory string, filename string, filetype string) {
 	//_ dennotes that the var is not used if you need to use it replace it with filename
 	_, err := os.Stat(directory + "/" + filename + filetype)
 
